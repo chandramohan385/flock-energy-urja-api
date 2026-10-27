@@ -1,0 +1,291 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Urja Meter Ops REST API",
+    "description": "A clean, modern, and documented REST API wrapper service over the legacy Urja Meter Ops utility portal.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Avuram Chandra Mohan"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000/api/v1",
+      "description": "Local development server"
+    }
+  ],
+  "paths": {
+    "/meters": {
+      "get": {
+        "summary": "List smart meters",
+        "description": "Returns a paginated list of smart meters, with optional search query across meter ID or serial number.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Search keyword for meter ID or serial number",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number to retrieve",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of smart meters retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeterListResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/meters/{id}": {
+      "get": {
+        "summary": "Get meter details",
+        "description": "Returns unified metadata, nameplate parameters, coordinates, and full network hierarchy for a specific meter.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the smart meter (e.g., J100000)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Meter details retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeterDetailResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Meter not found"
+          }
+        }
+      }
+    },
+    "/meters/{id}/consumption": {
+      "get": {
+        "summary": "Get meter consumption history",
+        "description": "Returns interval energy consumption readings for a meter with normalized ISO-8601 timestamps and typed numeric values.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Unique identifier of the smart meter",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Consumption history retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumptionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/meters/export": {
+      "get": {
+        "summary": "Bulk export all meters",
+        "description": "Leverages the portal's HMAC-SHA256 request signing mechanism to export the entire fleet of meters in a single high-performance payload.",
+        "responses": {
+          "200": {
+            "description": "Complete dataset of all meters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkExportResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hierarchy": {
+      "get": {
+        "summary": "Get network distribution hierarchy tree",
+        "description": "Reconstructs and returns the full 7-level electrical grid hierarchy: Zone -> Circle -> Division -> Subdivision -> Substation -> Feeder -> Distribution Transformer -> Meters.",
+        "responses": {
+          "200": {
+            "description": "Network hierarchy structure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/transformers": {
+      "get": {
+        "summary": "List distribution transformers",
+        "description": "Returns distribution transformers along with their feeder association and capacity.",
+        "responses": {
+          "200": {
+            "description": "List of transformers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "MeterListResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeterSummary"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        }
+      },
+      "MeterSummary": {
+        "type": "object",
+        "properties": {
+          "meterId": { "type": "string", "example": "J100000" },
+          "serialNo": { "type": "string", "example": "SE33962" },
+          "make": { "type": "string", "example": "HPL" },
+          "phaseType": { "type": "string", "example": "single" },
+          "installationStatus": { "type": "string", "example": "Decommissioned" },
+          "dtCode": { "type": "string", "example": "DT-001" }
+        }
+      },
+      "Pagination": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer", "example": 1 },
+          "pageSize": { "type": "integer", "example": 20 },
+          "total": { "type": "integer", "example": 405 },
+          "totalPages": { "type": "integer", "example": 21 }
+        }
+      },
+      "MeterDetailResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": {
+            "type": "object",
+            "properties": {
+              "meterId": { "type": "string", "example": "J100000" },
+              "serialNo": { "type": "string", "example": "SE33962" },
+              "make": { "type": "string", "example": "HPL" },
+              "phaseType": { "type": "string", "example": "single" },
+              "installationStatus": { "type": "string", "example": "Decommissioned" },
+              "installationType": { "type": "string", "example": "Whole Current" },
+              "location": {
+                "type": "object",
+                "properties": {
+                  "latitude": { "type": "number", "example": 26.938961 },
+                  "longitude": { "type": "number", "example": 75.830957 }
+                }
+              },
+              "hierarchy": {
+                "type": "object",
+                "properties": {
+                  "zone": { "$ref": "#/components/schemas/HierarchyNode" },
+                  "circle": { "$ref": "#/components/schemas/HierarchyNode" },
+                  "division": { "$ref": "#/components/schemas/HierarchyNode" },
+                  "subdivision": { "$ref": "#/components/schemas/HierarchyNode" },
+                  "substation": { "$ref": "#/components/schemas/HierarchyNode" },
+                  "feeder": { "$ref": "#/components/schemas/HierarchyNode" },
+                  "dt": { "$ref": "#/components/schemas/HierarchyNode" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "HierarchyNode": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "example": "Jaipur Zone 1" },
+          "code": { "type": "string", "example": "Z-01" }
+        }
+      },
+      "ConsumptionResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "meterId": { "type": "string", "example": "J100000" },
+          "count": { "type": "integer", "example": 48 },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "timestamp": { "type": "string", "format": "date-time", "example": "2026-06-23T23:30:00.000Z" },
+                "kwh": { "type": "number", "example": 48438.74 },
+                "kvah": { "type": "number", "example": 52313.84 },
+                "voltR": { "type": "integer", "example": 226 }
+              }
+            }
+          }
+        }
+      },
+      "BulkExportResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "count": { "type": "integer", "example": 403 },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    }
+  }
+}
